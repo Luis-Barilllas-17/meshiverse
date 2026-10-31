@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.dashboard')
 
 @section('title', 'Centro de conexión — MeshiVerse')
 
@@ -129,7 +129,7 @@
                 </div>
                 <p class="mt-4 text-sm leading-6 text-cream/55">Este token se pega en el otro proyecto. Le permitirá comprobar la conexión, leer el platillo diario y enviar respuestas de la encuesta.</p>
 
-                <form method="POST" action="{{ route('api.tokens.store') }}" class="mt-7 space-y-4">
+                <form method="POST" action="{{ route('admin.api.tokens.store') }}" class="mt-7 space-y-4">
                     @csrf
                     <div>
                         <label for="token_name" class="mb-2 block text-xs font-black uppercase tracking-widest text-cream/45">Nombre del proyecto receptor</label>
@@ -154,7 +154,7 @@
                                     <p class="truncate text-sm font-bold text-cream">{{ $token->name }}</p>
                                     <p class="mt-1 text-xs text-cream/35">Expira {{ $token->expires_at?->diffForHumans() }}</p>
                                 </div>
-                                <form method="POST" action="{{ route('api.tokens.destroy', $token->id) }}">
+                                <form method="POST" action="{{ route('admin.api.tokens.destroy', $token->id) }}">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="rounded-xl border border-coral/25 px-3 py-2 text-xs font-black text-coral transition hover:bg-coral/10">Revocar</button>
@@ -177,8 +177,9 @@
                 </div>
                 <p class="mt-4 text-sm leading-6 text-cream/55">Pega la URL base y el token generado por el otro proyecto. MeshiVerse hará una solicitud autenticada y mostrará una confirmación clara.</p>
 
-                <form method="POST" action="{{ route('api.connections.test') }}" class="mt-7 space-y-4">
+                <form method="POST" action="{{ route('admin.api.connections.test') }}" class="mt-7 space-y-4">
                     @csrf
+                    <input type="hidden" name="save_connection" value="0">
                     <div>
                         <label for="partner_url" class="mb-2 block text-xs font-black uppercase tracking-widest text-cream/45">URL del otro proyecto</label>
                         <input id="partner_url" name="partner_url" type="url" value="{{ old('partner_url', 'http://127.0.0.1:8000') }}" class="form-control" placeholder="http://127.0.0.1:8000" required>
@@ -186,19 +187,37 @@
                     </div>
                     <div>
                         <label for="partner_token" class="mb-2 block text-xs font-black uppercase tracking-widest text-cream/45">Token entregado por el otro proyecto</label>
-                        <textarea id="partner_token" name="partner_token" rows="5" class="w-full resize-y rounded-2xl border border-white/10 bg-ink/70 px-4 py-3 text-sm text-cream outline-none transition placeholder:text-cream/25 focus:border-mint/60 focus:ring-4 focus:ring-mint/10" placeholder="Pega aquí el token Bearer. No se guardará." required></textarea>
+                        <textarea id="partner_token" name="partner_token" rows="5" class="w-full resize-y rounded-2xl border border-white/10 bg-ink/70 px-4 py-3 text-sm text-cream outline-none transition placeholder:text-cream/25 focus:border-mint/60 focus:ring-4 focus:ring-mint/10" placeholder="Pega aquí el token Bearer" required></textarea>
                         @error('partner_token')<p class="mt-2 text-sm text-coral">{{ $message }}</p>@enderror
                     </div>
+                    <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-mint/20 bg-mint/5 p-4">
+                        <input type="checkbox" name="save_connection" value="1" checked class="mt-0.5 size-4 rounded border-white/20 bg-ink text-mint focus:ring-mint/30">
+                        <span>
+                            <strong class="block text-sm text-cream">Guardar conexión Hama</strong>
+                            <span class="mt-1 block text-xs leading-5 text-cream/45">Si el token incluye <code class="text-mint">hamas.read</code>, se cifrará para mostrar y actualizar todos los Hama desde el panel.</span>
+                        </span>
+                    </label>
                     <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-mint px-5 py-3.5 text-sm font-black text-ink transition hover:-translate-y-0.5 hover:bg-cream hover:shadow-xl hover:shadow-mint/10">
                         Probar conexión ahora
                     </button>
                 </form>
 
                 <div class="mt-6 rounded-2xl border border-white/10 bg-ink/45 p-4 text-xs leading-5 text-cream/40">
-                    El token remoto se usa una sola vez. MeshiVerse reconoce el handshake de Hama en <code class="text-mint">POST /api/v1/connections/handshake</code> y también su propio contrato en <code class="text-mint">GET /api/v1/partner/connection</code>. No se almacena en la base de datos.
+                    MeshiVerse reconoce el handshake de Hama en <code class="text-mint">POST /api/v1/connections/handshake</code> y también su propio contrato en <code class="text-mint">GET /api/v1/partner/connection</code>. Solo se guarda el token Hama si marcas la opción anterior; queda cifrado y nunca se muestra otra vez.
                 </div>
             </article>
         </div>
+
+        @if ($hamaConnection)
+            <a href="{{ route('admin.api.hamas.index') }}" class="mx-auto mt-7 flex max-w-7xl flex-col gap-4 rounded-[2rem] border border-gold/25 bg-gradient-to-r from-gold/15 via-night/75 to-mint/10 p-6 transition hover:-translate-y-0.5 hover:border-gold/45 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-xs font-black uppercase tracking-[.2em] text-gold">Conexión Hama guardada</p>
+                    <h3 class="mt-2 text-2xl font-black text-cream">Ver todos los datos transferidos</h3>
+                    <p class="mt-2 text-sm text-cream/50">{{ $hamaConnection->service_name }} · {{ $hamaConnection->records_count }} registros en la última comprobación</p>
+                </div>
+                <span class="rounded-full bg-gold px-5 py-2.5 text-sm font-black text-ink">Abrir visor →</span>
+            </a>
+        @endif
     </section>
 
     <section class="border-y border-white/10 bg-white/[0.02] px-5 py-20 lg:px-8">

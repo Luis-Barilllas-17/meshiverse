@@ -19,6 +19,20 @@
                     <span class="metadata-pill"><strong>{{ $recipe->prep_minutes + $recipe->cook_minutes }}</strong> min totales</span>
                     <span class="metadata-pill"><strong>{{ $recipe->servings }}</strong> porciones</span>
                     <span class="metadata-pill"><strong>{{ ucfirst($recipe->difficulty) }}</strong> dificultad</span>
+                    @auth
+                        <form method="POST" action="{{ $isFavorite ? route('favorites.destroy', $recipe) : route('favorites.store', $recipe) }}">
+                            @csrf
+                            @if ($isFavorite)
+                                @method('DELETE')
+                            @endif
+                            <button type="submit" class="metadata-pill transition hover:border-gold/60 hover:text-gold">
+                                <strong class="text-gold">{{ $isFavorite ? '★' : '☆' }}</strong>
+                                {{ $isFavorite ? 'Guardada en favoritos' : 'Agregar a favoritos' }}
+                            </button>
+                        </form>
+                    @else
+                        <a href="{{ route('login') }}" class="metadata-pill transition hover:border-gold/60 hover:text-gold"><strong class="text-gold">☆</strong> Inicia sesión para guardar</a>
+                    @endauth
                 </div>
             </div>
         </div>
@@ -88,7 +102,7 @@
                 </div>
                 <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     @foreach ($relatedRecipes as $relatedRecipe)
-                        <x-recipe-card :recipe="$relatedRecipe" />
+                        <x-recipe-card :recipe="$relatedRecipe" :is-favorite="$favoriteRecipeIds->contains($relatedRecipe->id)" />
                     @endforeach
                 </div>
             </div>

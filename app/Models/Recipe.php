@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 #[Fillable([
     'anime_series_id', 'title', 'slug', 'subtitle', 'description', 'image_path',
@@ -24,6 +25,12 @@ class Recipe extends Model
     public function animeSeries(): BelongsTo
     {
         return $this->belongsTo(AnimeSeries::class);
+    }
+
+    /** @return BelongsToMany<User, $this> */
+    public function favoritedBy(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'favorite_recipes')->withTimestamps();
     }
 
     public function getRouteKeyName(): string

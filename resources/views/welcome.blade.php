@@ -18,7 +18,11 @@
                 <p class="mt-7 max-w-xl text-base leading-7 text-cream/60 sm:text-lg">Descubre platos inolvidables de <strong class="text-cream">One Piece</strong>, <strong class="text-cream">Dr. Stone</strong>, <strong class="text-cream">Food Wars</strong>, <strong class="text-cream">Fate</strong> y <strong class="text-cream">Monster Hunter</strong>, adaptados para cocinar en el mundo real.</p>
                 <div class="mt-9 flex flex-wrap gap-4">
                     <a href="#recetas" class="rounded-full bg-coral px-6 py-3.5 text-sm font-black text-white shadow-xl shadow-coral/20 transition hover:-translate-y-1 hover:bg-[#ff7b5f]">Explorar recetas</a>
-                    <a href="{{ route('api.docs') }}" class="rounded-full border border-white/15 bg-white/5 px-6 py-3.5 text-sm font-black text-cream transition hover:-translate-y-1 hover:border-mint/50 hover:bg-mint/10">Conectar la API <span class="text-mint">↗</span></a>
+                    @auth
+                        <a href="{{ auth()->user()->isAdmin() ? route('admin.dashboard') : route('favorites.index') }}" class="rounded-full border border-white/15 bg-white/5 px-6 py-3.5 text-sm font-black text-cream transition hover:-translate-y-1 hover:border-mint/50 hover:bg-mint/10">Ir a mi panel <span class="text-mint">→</span></a>
+                    @else
+                        <a href="{{ route('login') }}" class="rounded-full border border-white/15 bg-white/5 px-6 py-3.5 text-sm font-black text-cream transition hover:-translate-y-1 hover:border-mint/50 hover:bg-mint/10">Iniciar sesión <span class="text-mint">→</span></a>
+                    @endauth
                 </div>
                 <div class="mt-12 grid max-w-lg grid-cols-3 divide-x divide-white/10 border-y border-white/10 py-5">
                     <div><strong class="block text-2xl font-black text-gold">{{ $recipeCount }}</strong><span class="text-xs uppercase tracking-wider text-cream/40">Recetas</span></div>
@@ -120,7 +124,7 @@
                 </div>
                 <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     @foreach ($featuredRecipes as $recipe)
-                        <x-recipe-card :recipe="$recipe" featured />
+                        <x-recipe-card :recipe="$recipe" :is-favorite="$favoriteRecipeIds->contains($recipe->id)" featured />
                     @endforeach
                 </div>
             </div>
@@ -173,7 +177,7 @@
 
             <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 @forelse ($recipes as $recipe)
-                    <x-recipe-card :recipe="$recipe" />
+                    <x-recipe-card :recipe="$recipe" :is-favorite="$favoriteRecipeIds->contains($recipe->id)" />
                 @empty
                     <div class="rounded-[2rem] border border-dashed border-white/15 bg-white/[0.03] p-12 text-center md:col-span-2 lg:col-span-3">
                         <p class="text-4xl">🍜</p>
@@ -194,13 +198,17 @@
             <div class="speed-lines pointer-events-none absolute -right-20 -top-24 size-96 opacity-20"></div>
             <div class="relative grid items-center gap-10 lg:grid-cols-[1fr_auto]">
                 <div>
-                    <span class="inline-flex rounded-full border border-mint/30 bg-mint/10 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-mint">API lista para conectar</span>
-                    <h2 class="mt-5 max-w-3xl text-balance text-3xl font-black tracking-tight sm:text-5xl">Comparte el menú con tu otro proyecto.</h2>
-                    <p class="mt-4 max-w-2xl text-base leading-7 text-cream/55">OAuth 2.0 con Laravel Passport, plato diario público, encuesta comunitaria y respuestas JSON consistentes para integrar MeshiVerse de forma segura.</p>
+                    <span class="inline-flex rounded-full border border-mint/30 bg-mint/10 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-mint">Tu recetario personal</span>
+                    <h2 class="mt-5 max-w-3xl text-balance text-3xl font-black tracking-tight sm:text-5xl">Guarda tus platos favoritos y propón la siguiente aventura.</h2>
+                    <p class="mt-4 max-w-2xl text-base leading-7 text-cream/55">Inicia sesión para marcar recetas con una estrella, consultar tu colección y enviar ideas inspiradas en anime o videojuegos.</p>
                 </div>
                 <div class="flex flex-wrap gap-3">
-                    <a href="{{ route('suggestions.create') }}" class="inline-flex items-center justify-center rounded-full border border-white/15 px-7 py-4 text-sm font-black text-cream transition hover:-translate-y-1 hover:border-gold/50">Sugerir platillo</a>
-                    <a href="{{ route('api.docs') }}" class="inline-flex items-center justify-center gap-3 rounded-full bg-cream px-7 py-4 text-sm font-black text-ink shadow-xl transition hover:-translate-y-1 hover:bg-gold">Ver documentación <span>↗</span></a>
+                    @auth
+                        <a href="{{ route('suggestions.create') }}" class="inline-flex items-center justify-center rounded-full border border-white/15 px-7 py-4 text-sm font-black text-cream transition hover:-translate-y-1 hover:border-gold/50">Sugerir platillo</a>
+                        <a href="{{ route('favorites.index') }}" class="inline-flex items-center justify-center gap-3 rounded-full bg-cream px-7 py-4 text-sm font-black text-ink shadow-xl transition hover:-translate-y-1 hover:bg-gold">Mis favoritos <span>★</span></a>
+                    @else
+                        <a href="{{ route('login') }}" class="inline-flex items-center justify-center gap-3 rounded-full bg-cream px-7 py-4 text-sm font-black text-ink shadow-xl transition hover:-translate-y-1 hover:bg-gold">Entrar a MeshiVerse <span>→</span></a>
+                    @endauth
                 </div>
             </div>
         </div>

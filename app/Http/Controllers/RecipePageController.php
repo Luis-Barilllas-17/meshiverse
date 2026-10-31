@@ -7,6 +7,7 @@ use App\Models\Recipe;
 use App\Support\DishOfTheDay;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class RecipePageController extends Controller
@@ -50,10 +51,11 @@ class RecipePageController extends Controller
                 fn (Recipe $recipe): int => count($recipe->ingredients),
             ),
             'dishOfTheDay' => $dishOfTheDay->get(),
+            'favoriteRecipeIds' => $this->favoriteRecipeIds($request),
         ]);
     }
 
-    public function show(Recipe $recipe): View
+    public function show(Request $request, Recipe $recipe): View
     {
         abort_unless($recipe->published_at?->isPast(), 404);
 
@@ -67,6 +69,19 @@ class RecipePageController extends Controller
             ->limit(3)
             ->get();
 
-        return view('recipes.show', compact('recipe', 'relatedRecipes'));
+        $favoriteRecipeIds = $this->favoriteRecipeIds($request);
+
+        return view('recipes.show', [
+            'recipe' => $recipe,
+            'relatedRecipes' => $relatedRecipes,
+            'isFavorite' => $favoriteRecipeIds->contains($recipe->getKey()),
+            'favoriteRecipeIds' => $favoriteRecipeIds,
+        ]);
+    }
+
+    /** @return Collection<int, int> */
+    private function favoriteRecipeIds(Request $request): Collection
+    {
+        return $request->user()?->favoriteRecipes()->pluck('recipes.id') ?? collect();
     }
 }

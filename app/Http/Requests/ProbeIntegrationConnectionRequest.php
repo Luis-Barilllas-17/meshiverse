@@ -19,6 +19,7 @@ class ProbeIntegrationConnectionRequest extends FormRequest
         return [
             'partner_url' => ['required', 'url:http,https', 'max:255'],
             'partner_token' => ['required', 'string', 'min:20', 'max:4096'],
+            'save_connection' => ['sometimes', 'boolean'],
         ];
     }
 

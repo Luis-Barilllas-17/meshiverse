@@ -12,7 +12,7 @@ class IntegrationTokenController extends Controller
     {
         $result = $tokens->issue($request->string('token_name')->toString());
 
-        return to_route('api.docs')->with([
+        return to_route('admin.api.docs')->with([
             'success' => 'Token de conexión generado. Cópialo ahora: por seguridad solo se muestra una vez.',
             'generated_token' => $result->accessToken,
             'generated_token_expires_at' => $result->token?->expires_at?->toIso8601String(),
@@ -23,6 +23,6 @@ class IntegrationTokenController extends Controller
     {
         abort_unless($tokens->revoke($token), 404);
 
-        return to_route('api.docs')->with('success', 'El token fue revocado y ya no puede conectarse.');
+        return to_route('admin.api.docs')->with('success', 'El token fue revocado y ya no puede conectarse.');
     }
 }

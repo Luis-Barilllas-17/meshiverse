@@ -10,9 +10,6 @@ class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
 
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
         $this->call([
@@ -23,6 +20,19 @@ class DatabaseSeeder extends Seeder
 
         User::query()->updateOrCreate(['email' => 'api@meshiverse.test'], [
             'name' => 'Integración MeshiVerse',
+            'role' => User::ROLE_USER,
+            'password' => 'password',
+        ]);
+
+        User::query()->updateOrCreate(['email' => 'admin@meshiverse.test'], [
+            'name' => 'Administrador MeshiVerse',
+            'role' => User::ROLE_ADMIN,
+            'password' => 'password',
+        ]);
+
+        User::query()->updateOrCreate(['email' => 'usuario@meshiverse.test'], [
+            'name' => 'Explorador del Calabozo',
+            'role' => User::ROLE_USER,
             'password' => 'password',
         ]);
     }

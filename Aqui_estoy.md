@@ -23,9 +23,15 @@ La conexión entre proyectos usa tokens OAuth 2.0 Bearer. MeshiVerse puede gener
 - Formulario web y endpoint de API para sugerencias.
 - Platillo del día disponible en la web y por API.
 - Centro local de conexión para generar, revocar y probar tokens.
+- Inicio de sesión con los roles `admin` y `user`.
+- Panel administrativo para crear recetas y controlar la receta del día.
+- Panel de usuario con favoritos, propuestas y perfil.
+- Configuración de la API visible únicamente para administradores.
 - API versionada bajo `/api/v1`.
 - Autenticación OAuth 2.0 mediante Laravel Passport.
 - Compatibilidad del comprobador con el contrato del proyecto Hama y con el contrato de MeshiVerse.
+- Visor administrativo de Hama que consulta datos reales con `GET /api/v1/hamas`.
+- Token remoto Hama cifrado en la base de datos y oculto en formularios, vistas y sesiones.
 - Pruebas automatizadas para páginas, recetas, sugerencias, autenticación e integración.
 
 La dirección local principal es:
@@ -127,6 +133,7 @@ composer install
 Copy-Item .env.example .env
 & 'C:\laragon\bin\php\php-8.3.33-Win32-vs16-x64\php.exe' artisan key:generate
 & 'C:\laragon\bin\php\php-8.3.33-Win32-vs16-x64\php.exe' artisan migrate --seed
+& 'C:\laragon\bin\php\php-8.3.33-Win32-vs16-x64\php.exe' artisan storage:link
 npm.cmd install
 npm.cmd run build
 ```
@@ -174,14 +181,24 @@ No se deben copiar tokens, secretos OAuth, claves privadas ni el valor de `APP_K
 |---|---|---|
 | `GET` | `/` | Página principal, catálogo, filtros y platillo del día. |
 | `GET` | `/recetas/{slug}` | Detalle de una receta. |
+| `GET/POST` | `/login` | Inicio de sesión y detección del rol. |
+| `POST` | `/logout` | Cierra la sesión actual. |
+| `GET` | `/panel` | Resumen del usuario. |
+| `GET` | `/favoritos` | Recetas guardadas por el usuario. |
+| `POST/DELETE` | `/favoritos/{slug}` | Agrega o elimina un favorito. |
 | `GET` | `/sugerencias` | Encuesta para proponer un platillo. |
 | `POST` | `/sugerencias` | Guarda una propuesta. |
-| `GET` | `/api` | Centro local de conexión y tokens. |
-| `POST` | `/connection-center/tokens` | Genera un token de MeshiVerse. |
-| `DELETE` | `/connection-center/tokens/{token}` | Revoca un token generado. |
-| `POST` | `/connection-center/test` | Comprueba el token de otro proyecto. |
+| `GET/PATCH` | `/perfil` | Consulta y actualiza el perfil. |
+| `PATCH` | `/perfil/contrasena` | Actualiza la contraseña. |
+| `GET` | `/admin` | Resumen administrativo. |
+| `GET/POST` | `/admin/recetas/crear` y `/admin/recetas` | Formulario y registro de recetas. |
+| `GET/PATCH` | `/admin/receta-del-dia` | Selección manual o automática. |
+| `GET` | `/admin/configuracion/api` | Centro de conexión y tokens. |
+| `POST` | `/admin/configuracion/api/tokens` | Genera un token de MeshiVerse. |
+| `DELETE` | `/admin/configuracion/api/tokens/{token}` | Revoca un token generado. |
+| `POST` | `/admin/configuracion/api/probar` | Comprueba el token de otro proyecto. |
 
-El centro de conexión `/api` solamente permite solicitudes realizadas desde `127.0.0.1` o `::1`.
+El centro de conexión requiere una cuenta de administrador y solamente permite solicitudes realizadas desde `127.0.0.1` o `::1`. La ruta heredada `/api` redirige a esa configuración protegida.
 
 ---
 
@@ -210,6 +227,24 @@ El centro de conexión `/api` solamente permite solicitudes realizadas desde `12
 - Lista de ingredientes.
 - Pasos de preparación.
 - Recetas relacionadas del mismo universo.
+- Estrella para agregar o quitar la receta de favoritos.
+
+### Panel administrativo
+
+- Resumen de recetas, propuestas y selección diaria.
+- Formulario completo para imagen, universo, ingredientes, pasos, tiempos y dificultad.
+- Publicación inmediata o guardado como borrador.
+- Selección manual de cualquier receta como platillo del día.
+- Modo automático con rotación diaria entre recetas publicadas.
+- Perfil y cambio de contraseña.
+- Configuración de tokens y prueba de conexiones API en una sección aislada.
+
+### Panel de usuario
+
+- Resumen personal.
+- Colección de recetas favoritas.
+- Encuesta de sugerencias vinculada a su cuenta.
+- Perfil y cambio de contraseña.
 
 ### Encuesta de propuestas
 
@@ -560,16 +595,17 @@ Duración configurada de los tokens:
 El centro se abre en:
 
 ```text
-http://127.0.0.1:8001/api
+http://127.0.0.1:8001/admin/configuracion/api
 ```
 
 ### Generar un token de MeshiVerse
 
-1. Abrir `/api` desde el mismo equipo.
-2. Escribir un nombre para identificar el proyecto receptor.
-3. Presionar **Generar token seguro**.
-4. Copiar el token inmediatamente.
-5. Pegar el token en el proyecto que consumirá MeshiVerse.
+1. Iniciar sesión con una cuenta administrativa.
+2. Abrir `/admin/configuracion/api` desde el mismo equipo.
+3. Escribir un nombre para identificar el proyecto receptor.
+4. Presionar **Generar token seguro**.
+5. Copiar el token inmediatamente.
+6. Pegar el token en el proyecto que consumirá MeshiVerse.
 
 El token solamente se muestra una vez. Se crea para el usuario técnico:
 
@@ -631,6 +667,26 @@ Para considerarse exitosa, la respuesta de Hama debe incluir:
 ```
 
 MeshiVerse también puede mostrar las capacidades de Hama cuyo campo `allowed` sea `true`.
+
+### Guardar la conexión y mostrar los Hama
+
+Si el handshake confirma la capacidad `hamas.list` o el permiso `hamas.read`, el administrador puede guardar la conexión. MeshiVerse cifra el token antes de almacenarlo y lo utiliza para consultar:
+
+```http
+GET {URL_HAMA}/api/v1/hamas
+Authorization: Bearer {TOKEN_GENERADO_POR_HAMA}
+Accept: application/json
+```
+
+El visor está disponible en:
+
+```text
+/admin/configuracion/api/hamas
+```
+
+La pantalla muestra todos los registros devueltos por ProyectoAPI, su patrón, dimensiones, cantidad de cuentas, color, visibilidad, fechas y el JSON exacto transferido. También indica la fecha de sincronización, el total recibido y los errores de autenticación o conexión.
+
+El token anterior a esta función no puede recuperarse porque solo se mantenía temporalmente en el navegador. Debe pegarse una vez más; a partir de ese momento queda cifrado hasta que el administrador use **Olvidar conexión**.
 
 ### Segundo intento: contrato de MeshiVerse
 
@@ -770,11 +826,12 @@ Los seeders principales son:
 - `database/seeders/ExpandedRecipeSeeder.php`
 - `database/seeders/DatabaseSeeder.php`
 
-El seeder general también crea o actualiza un usuario de pruebas local:
+El seeder general crea o actualiza estas cuentas locales:
 
 ```text
-Correo: api@meshiverse.test
-Contraseña: password
+Administrador: admin@meshiverse.test / password
+Usuario: usuario@meshiverse.test / password
+Cuenta API heredada: api@meshiverse.test / password
 ```
 
 Esta cuenta es únicamente para desarrollo local. No debe conservar esa contraseña en un entorno publicado.
@@ -789,6 +846,7 @@ Esta cuenta es únicamente para desarrollo local. No debe conservar esa contrase
 public/images/series
 public/images/recipes
 public/images/recipes/web
+storage/app/public/recipes/admin
 ```
 
 Estado actual de archivos:
@@ -1060,12 +1118,11 @@ http://127.0.0.1:8000/api
 
 ## 28. Trabajo futuro recomendado
 
-- Probar la conexión real con Hama manteniendo ambos proyectos encendidos.
-- Confirmar que el token de Hama incluya acceso a su endpoint de handshake.
-- Mostrar un panel administrativo para revisar y aprobar propuestas.
-- Añadir autenticación administrativa a la gestión del catálogo.
-- Permitir cargar imágenes desde un formulario seguro.
-- Añadir más universos y recetas mediante seeders o un panel de administración.
+- Mantener ambos proyectos encendidos al actualizar el visor Hama.
+- Confirmar que el token de Hama incluya `hamas.read` si ProyectoAPI lo rechaza.
+- Añadir al panel administrativo una bandeja para aprobar o rechazar propuestas.
+- Permitir editar y eliminar recetas creadas desde el panel.
+- Añadir más universos y recetas mediante seeders o el panel administrativo.
 - Revisar y normalizar todos los créditos de imágenes antes de publicar.
 - Añadir pruebas de extremo a extremo entre ambos proyectos cuando compartan un entorno de integración.
 

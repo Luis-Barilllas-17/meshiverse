@@ -16,7 +16,11 @@ class RecipeSuggestionController extends Controller
 
     public function store(StoreRecipeSuggestionRequest $request): RedirectResponse
     {
-        RecipeSuggestion::query()->create($request->validated());
+        RecipeSuggestion::query()->create([
+            ...$request->validated(),
+            'user_id' => $request->user()?->getKey(),
+            'email' => $request->validated('email') ?: $request->user()?->email,
+        ]);
 
         return to_route('suggestions.create')->with('success', '¡Tu propuesta entró a la lista de futuras aventuras culinarias!');
     }
